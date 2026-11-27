@@ -269,18 +269,37 @@ const INITIAL_PRODUCTS: Product[] = [
   },
 ];
 
-// Seed Stations
-const INITIAL_STATIONS: GamingStation[] = [
-  { id: 'st-1', name: 'PS5 Seat 1', subtitle: 'PlayStation 5', type: 'PS5', hourlyRate: 100, halfHourRate: 60, packages: buildDefaultPackages(100, 60), status: 'occupied', currentSessionId: 'sess-1', notes: '4K 120Hz OLED, 2 DualSense' },
-  { id: 'st-2', name: 'PS5 Seat 2', subtitle: 'PlayStation 5 (FIFA Rig)', type: 'PS5', hourlyRate: 120, halfHourRate: 70, packages: buildDefaultPackages(120, 70), status: 'occupied', currentSessionId: 'sess-2', notes: '4K Display, 4 Controllers' },
-  { id: 'st-3', name: 'PS5 Seat 3', subtitle: 'PlayStation 5', type: 'PS5', hourlyRate: 100, halfHourRate: 60, packages: buildDefaultPackages(100, 60), status: 'available', notes: '55 inch QLED' },
-  { id: 'st-4', name: 'PS5 Seat 4', subtitle: 'PlayStation 5', type: 'PS5', hourlyRate: 100, halfHourRate: 60, packages: buildDefaultPackages(100, 60), status: 'available', notes: '55 inch QLED' },
-  { id: 'st-5', name: 'PC Rig 1', subtitle: 'RTX 4080 • 240Hz', type: 'PC', hourlyRate: 100, halfHourRate: 60, packages: buildDefaultPackages(100, 60), status: 'available', notes: '240Hz, Mechanical Keyboard' },
-  { id: 'st-6', name: 'PC Rig 2', subtitle: 'RTX 4080 • 240Hz', type: 'PC', hourlyRate: 100, halfHourRate: 60, packages: buildDefaultPackages(100, 60), status: 'available', notes: '240Hz, Mechanical Keyboard' },
-  { id: 'st-7', name: 'Racing Sim 1', subtitle: 'Logitech G29 Cockpit', type: 'Racing', hourlyRate: 200, halfHourRate: 120, packages: buildDefaultPackages(200, 120), status: 'available', notes: 'Cockpit seat, Force Feedback wheel' },
-  { id: 'st-8', name: 'VR Arena', subtitle: 'Meta Quest 3', type: 'VR', hourlyRate: 250, halfHourRate: 150, packages: buildDefaultPackages(250, 150), status: 'available', notes: 'Full room-scale VR' },
-  { id: 'st-9', name: 'Snooker Table 1', subtitle: 'Tournament Slate', type: 'Billiards', hourlyRate: 180, halfHourRate: 100, packages: buildDefaultPackages(180, 100), status: 'available', notes: 'Full size slate table' },
-];
+// Seed Stations — 86 stations (PS5×25, PS4×25, Xbox×20, Pandora×16)
+function generateInitialStations(): GamingStation[] {
+  const configs: { type: GamingStation['type']; prefix: string; subtitle: string; count: number; hourly: number; halfHour: number }[] = [
+    { type: 'PS5', prefix: 'PS5 Seat', subtitle: 'PlayStation 5', count: 25, hourly: 100, halfHour: 60 },
+    { type: 'PS4', prefix: 'PS4 Seat', subtitle: 'PlayStation 4', count: 25, hourly: 80, halfHour: 50 },
+    { type: 'Xbox', prefix: 'Xbox Seat', subtitle: 'Xbox Series X', count: 20, hourly: 100, halfHour: 60 },
+    { type: 'Pandora', prefix: 'Pandora Box', subtitle: 'Pandora Box Arcade', count: 16, hourly: 60, halfHour: 40 },
+  ];
+  const stations: GamingStation[] = [];
+  let id = 1;
+  for (const c of configs) {
+    for (let i = 1; i <= c.count; i++) {
+      const isOccupied = c.type === 'PS5' && i <= 2;
+      stations.push({
+        id: `st-${id}`,
+        name: `${c.prefix} ${i}`,
+        subtitle: c.subtitle,
+        type: c.type,
+        hourlyRate: c.hourly,
+        halfHourRate: c.halfHour,
+        packages: buildDefaultPackages(c.hourly, c.halfHour),
+        status: isOccupied ? 'occupied' : 'available',
+        ...(isOccupied ? { currentSessionId: `sess-${i}` } : {}),
+        notes: '',
+      });
+      id++;
+    }
+  }
+  return stations;
+}
+const INITIAL_STATIONS: GamingStation[] = generateInitialStations();
 
 // Seed Active Sessions
 const session1Start = new Date(Date.now() - 55 * 60 * 1000).toISOString(); // 55 mins ago (5 mins left of 60m)
@@ -314,7 +333,7 @@ const INITIAL_SESSIONS: GamingSession[] = [
         unitCost: 35,
         lineTotal: 50,
         addedByEmployeeId: 'emp-1',
-        addedByEmployeeName: 'Tanvir (Admin)',
+        addedByEmployeeName: 'Biplob (Owner)',
         addedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
       },
       {
@@ -326,7 +345,7 @@ const INITIAL_SESSIONS: GamingSession[] = [
         unitCost: 12,
         lineTotal: 40,
         addedByEmployeeId: 'emp-1',
-        addedByEmployeeName: 'Tanvir (Admin)',
+        addedByEmployeeName: 'Biplob (Owner)',
         addedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
       },
       {
@@ -338,7 +357,7 @@ const INITIAL_SESSIONS: GamingSession[] = [
         unitCost: 14,
         lineTotal: 20,
         addedByEmployeeId: 'emp-1',
-        addedByEmployeeName: 'Tanvir (Admin)',
+        addedByEmployeeName: 'Biplob (Owner)',
         addedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
       },
     ],
@@ -349,7 +368,7 @@ const INITIAL_SESSIONS: GamingSession[] = [
     previousPayments: 0,
     status: 'active',
     createdByEmployeeId: 'emp-1',
-    createdByEmployeeName: 'Tanvir (Admin)',
+    createdByEmployeeName: 'Biplob (Owner)',
     createdAt: session1Start,
     notes: 'Playing FC 25 tournament match',
   },
@@ -364,10 +383,10 @@ const INITIAL_SESSIONS: GamingSession[] = [
     startTime: session2Start,
     bookedMinutes: 60,
     durationMinutes: 25,
-    hourlyRate: 120,
+    hourlyRate: 100,
     packageName: '1 Player • 1 Hour',
-    lockedGamingCharge: 120,
-    gamingCharge: 120,
+    lockedGamingCharge: 100,
+    gamingCharge: 100,
     totalPausedMs: 0,
     extensions: [],
     productItems: [
@@ -380,7 +399,7 @@ const INITIAL_SESSIONS: GamingSession[] = [
         unitCost: 28,
         lineTotal: 80,
         addedByEmployeeId: 'emp-2',
-        addedByEmployeeName: 'Siam (Staff)',
+        addedByEmployeeName: 'Sabbir (Staff)',
         addedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
       },
     ],
@@ -391,7 +410,7 @@ const INITIAL_SESSIONS: GamingSession[] = [
     previousPayments: 0,
     status: 'active',
     createdByEmployeeId: 'emp-2',
-    createdByEmployeeName: 'Siam (Staff)',
+    createdByEmployeeName: 'Sabbir (Staff)',
     createdAt: session2Start,
     notes: 'Mortal Kombat match',
   },
@@ -401,7 +420,7 @@ const INITIAL_SESSIONS: GamingSession[] = [
 const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: 'emp-1',
-    name: 'Tanvir Rahman',
+    name: 'Biplob',
     role: 'Owner',
     pin: '1234',
     phone: '01700000001',
@@ -417,7 +436,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
   },
   {
     id: 'emp-2',
-    name: 'Siam Hossain',
+    name: 'Sabbir',
     role: 'Staff',
     pin: '2222',
     phone: '01700000002',
@@ -488,7 +507,7 @@ const INITIAL_DUES: DueRecord[] = [
     remainingBalance: 120,
     createdDate: new Date(Date.now() - 2 * 86400000).toISOString(),
     employeeId: 'emp-1',
-    employeeName: 'Tanvir Rahman',
+    employeeName: 'Biplob',
     status: 'PARTIALLY_PAID',
     repayments: [],
     notes: 'Left in hurry, promised to pay next session',
