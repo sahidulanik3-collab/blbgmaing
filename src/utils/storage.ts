@@ -22,6 +22,9 @@ import {
 } from '../types';
 import { generateReceiptNumber } from './formatters';
 
+const STORAGE_VERSION_KEY = 'blb_db_version';
+const CURRENT_STORAGE_VERSION = 'v2_6_stations_biplob';
+
 const STORAGE_KEYS = {
   PRODUCTS: 'blb_products',
   TRANSACTIONS: 'blb_inventory_transactions',
@@ -269,37 +272,77 @@ const INITIAL_PRODUCTS: Product[] = [
   },
 ];
 
-// Seed Stations — 86 stations (PS5×25, PS4×25, Xbox×20, Pandora×16)
-function generateInitialStations(): GamingStation[] {
-  const configs: { type: GamingStation['type']; prefix: string; subtitle: string; count: number; hourly: number; halfHour: number }[] = [
-    { type: 'PS5', prefix: 'PS5 Seat', subtitle: 'PlayStation 5', count: 25, hourly: 100, halfHour: 60 },
-    { type: 'PS4', prefix: 'PS4 Seat', subtitle: 'PlayStation 4', count: 25, hourly: 80, halfHour: 50 },
-    { type: 'Xbox', prefix: 'Xbox Seat', subtitle: 'Xbox Series X', count: 20, hourly: 100, halfHour: 60 },
-    { type: 'Pandora', prefix: 'Pandora Box', subtitle: 'Pandora Box Arcade', count: 16, hourly: 60, halfHour: 40 },
-  ];
-  const stations: GamingStation[] = [];
-  let id = 1;
-  for (const c of configs) {
-    for (let i = 1; i <= c.count; i++) {
-      const isOccupied = c.type === 'PS5' && i <= 2;
-      stations.push({
-        id: `st-${id}`,
-        name: `${c.prefix} ${i}`,
-        subtitle: c.subtitle,
-        type: c.type,
-        hourlyRate: c.hourly,
-        halfHourRate: c.halfHour,
-        packages: buildDefaultPackages(c.hourly, c.halfHour),
-        status: isOccupied ? 'occupied' : 'available',
-        ...(isOccupied ? { currentSessionId: `sess-${i}` } : {}),
-        notes: '',
-      });
-      id++;
-    }
-  }
-  return stations;
-}
-const INITIAL_STATIONS: GamingStation[] = generateInitialStations();
+// Seed Stations — 6 stations (PS5 Seat 1 & 2, PS4 Seat 1 & 2, Xbox Series X, Pandora Box Arcade)
+const INITIAL_STATIONS: GamingStation[] = [
+  {
+    id: 'st-1',
+    name: 'PS5 Seat 1',
+    subtitle: 'PlayStation 5',
+    type: 'PS5',
+    hourlyRate: 100,
+    halfHourRate: 60,
+    packages: buildDefaultPackages(100, 60),
+    status: 'occupied',
+    currentSessionId: 'sess-1',
+    notes: '4K Display • DualSense',
+  },
+  {
+    id: 'st-2',
+    name: 'PS5 Seat 2',
+    subtitle: 'PlayStation 5',
+    type: 'PS5',
+    hourlyRate: 100,
+    halfHourRate: 60,
+    packages: buildDefaultPackages(100, 60),
+    status: 'occupied',
+    currentSessionId: 'sess-2',
+    notes: '4K Display • DualSense',
+  },
+  {
+    id: 'st-3',
+    name: 'PS4 Seat 1',
+    subtitle: 'PlayStation 4',
+    type: 'PS4',
+    hourlyRate: 80,
+    halfHourRate: 50,
+    packages: buildDefaultPackages(80, 50),
+    status: 'available',
+    notes: 'DualShock 4',
+  },
+  {
+    id: 'st-4',
+    name: 'PS4 Seat 2',
+    subtitle: 'PlayStation 4',
+    type: 'PS4',
+    hourlyRate: 80,
+    halfHourRate: 50,
+    packages: buildDefaultPackages(80, 50),
+    status: 'available',
+    notes: 'DualShock 4',
+  },
+  {
+    id: 'st-5',
+    name: 'Xbox Seat 1',
+    subtitle: 'Xbox Series X',
+    type: 'Xbox',
+    hourlyRate: 100,
+    halfHourRate: 60,
+    packages: buildDefaultPackages(100, 60),
+    status: 'available',
+    notes: 'Game Pass Ultimate',
+  },
+  {
+    id: 'st-6',
+    name: 'Pandora Box 1',
+    subtitle: 'Pandora Box Arcade',
+    type: 'Pandora',
+    hourlyRate: 60,
+    halfHourRate: 40,
+    packages: buildDefaultPackages(60, 40),
+    status: 'available',
+    notes: 'Classic Arcade Joystick',
+  },
+];
 
 // Seed Active Sessions
 const session1Start = new Date(Date.now() - 55 * 60 * 1000).toISOString(); // 55 mins ago (5 mins left of 60m)
@@ -562,8 +605,17 @@ class DB {
     }
   }
 
-  // Initialize seed database if empty
+  // Initialize seed database if empty or version upgraded
   static init() {
+    const savedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
+    if (savedVersion !== CURRENT_STORAGE_VERSION) {
+      // Auto-migrate to latest 6-station demo with Biplob (Owner) & Sabbir (Staff)
+      this.set(STORAGE_KEYS.STATIONS, INITIAL_STATIONS);
+      this.set(STORAGE_KEYS.EMPLOYEES, INITIAL_EMPLOYEES);
+      this.set(STORAGE_KEYS.CURRENT_USER, INITIAL_EMPLOYEES[0]);
+      localStorage.setItem(STORAGE_VERSION_KEY, CURRENT_STORAGE_VERSION);
+    }
+
     if (!localStorage.getItem(STORAGE_KEYS.PRODUCTS)) {
       this.set(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS);
     }
